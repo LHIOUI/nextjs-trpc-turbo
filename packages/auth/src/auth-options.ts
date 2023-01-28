@@ -1,11 +1,12 @@
 import { type NextAuthOptions } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
+import GoogleProvider, { GoogleProfile } from "next-auth/providers/google";
 
 import { prisma } from "@lh/db";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 export type GoogleProviderConfig = {
   clientId: string;
   clientSecret: string;
+  type: "ADMIN" | "CLIENT";
 };
 export const authOptions: (config: GoogleProviderConfig) => NextAuthOptions = (
   config: GoogleProviderConfig,
@@ -13,9 +14,18 @@ export const authOptions: (config: GoogleProviderConfig) => NextAuthOptions = (
   // Configure one or more authentication providers
   adapter: PrismaAdapter(prisma),
   providers: [
-    GoogleProvider({
+    GoogleProvider<GoogleProfile>({
       clientId: config.clientId,
       clientSecret: config.clientSecret,
+      profile: (profile) => {
+        return {
+          id: profile.sub,
+          type: config.type,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture,
+        };
+      },
     }),
   ],
   callbacks: {
